@@ -2,7 +2,7 @@ const express = require("express");
 require('dotenv').config();
 const database = require("./config/database");
 
-const routes = require("./routes/index.route");
+const routes = require("./api/v1/routes/index.route");
 
 database.connect(); // ket noi database
 
