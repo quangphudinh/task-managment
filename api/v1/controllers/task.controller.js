@@ -1,10 +1,15 @@
 const Task = require('../models/task.model');
 const paginationHelper = require('../../../helpers/pagination');
 const searchHelper = require('../../../helpers/search');
+const { create } = require('../models/user.model');
 
 // [GET] /api/v1/tasks
 module.exports.index = async (req, res) => {
     const find = {
+        $or : [
+            {createBy: req.user.id},
+            {listUser: req.user.id}
+        ],
         deleted: false
     }
     if (req.query.status) {
