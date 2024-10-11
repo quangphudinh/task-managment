@@ -130,6 +130,7 @@ module.exports.changeMulti = async (req, res) => {
 //[POST] /api/v1/tasks/create
 module.exports.create = async (req, res) => {
     try {
+        req.body.createBy =  req.user.id;
         const product = new Task(req.body);
         const data = await product.save();
         
