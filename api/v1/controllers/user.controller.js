@@ -5,6 +5,7 @@ const ForgotPassword = require('../models/forgot-password.model');
 const generateHelper = require('../../../helpers/generate'); 
 const sendMailHelper = require('../../../helpers/sentMail');
 
+
 //[POST] /api/v1/users/register
 module.exports.register = async (req, res) => {
     try {
@@ -22,7 +23,8 @@ module.exports.register = async (req, res) => {
             const user = new User({
                 fullName: req.body.fullName,
                 email: req.body.email,
-                password: req.body.password
+                password: req.body.password,
+                token: generateHelper.generateRandomString(20)
             });
             await user.save();
             const token = user.token;
@@ -179,17 +181,11 @@ module.exports.resetPassword = async (req, res) => {
 
 }
 
-
 //[GET] /api/v1/users/detail
 module.exports.detail = async (req, res) => {
-    const token = req.cookies.token;
-    const user = await User.findOne({
-        token : token,
-        deleted : false
-    }).select('-password -token -_id');
     res.json({
         code: 200,
         message: 'Lấy thông tin thành công',
-        user : user
+        user : req.user
     });
 }
