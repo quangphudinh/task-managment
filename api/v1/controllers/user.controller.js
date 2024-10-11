@@ -1,5 +1,9 @@
 const md5 = require('md5');
 const User = require('../models/user.model');
+const ForgotPassword = require('../models/forgot-password.model');
+
+const generateHelper = require('../../../helpers/generate'); 
+const sendMailHelper = require('../../../helpers/sentMail');
 
 //[POST] /api/v1/users/register
 module.exports.register = async (req, res) => {
@@ -53,7 +57,7 @@ module.exports.login = async (req, res) => {
         });
         return;
     }
-     
+
     if (md5(password) !== user.password) {
         res.json({
             code: 400,
@@ -70,4 +74,77 @@ module.exports.login = async (req, res) => {
         message: 'Đăng nhập thành công',
         token : token
     });
+}
+
+//[POST] /api/v1/users/password/forgot
+module.exports.forgotPassword = async (req, res) => {
+    const email = req.body.email;
+    
+    const user = await User.findOne({
+        email: email,
+        deleted: false
+    })
+    
+    if (!user) {
+        res.json({
+            code: 400,
+            message: 'Email khong tồn tại'
+        });
+        return;
+    }
+
+    //Tạo OTP và lưu vào DB
+    const otp = generateHelper.generateRandomNumber(4);
+    const objectForgotPassword = {
+        email : email,
+        OTP : otp,
+        expireAt : Date.now()
+    }
+    
+    const forgotPassword = new ForgotPassword(objectForgotPassword);
+    await forgotPassword.save();
+
+    //Gửi OTP qua Email cho User
+    const subject = "Mã OTP xác minh Email của bạn !!"
+    const html = `
+        <h1>Mã OTP của bạn là : <b>${otp}</b></h1>
+        <p>Mã OTP sẽ hết hiệu lực sau 5 phút</p><br>
+        <p>Vui lòng không cung cấp mã OTP cho bất kỳ ai</p>
+    `
+    sendMailHelper.sendMail(email, subject, html);
+
+    res.json({
+        code: 200,
+        message: 'Gửi OTP thành công qua Email'
+    });
+}
+
+//[POST] /api/v1/users/password/otp
+module.exports.otpPassword = async (req, res) => {
+    const email = req.body.email;
+    const otp = req.body.otp;
+
+    const result = await ForgotPassword.findOne({
+        email : email,
+        OTP : otp
+    })
+    if (!result) {
+        res.json({
+            code: 400,
+            message: 'OTP đã hết hiệu lực'
+        });
+        return;
+    }
+
+    const user = await User.findOne({
+        email : email
+    })
+    const token = user.token;
+    res.cookie('token', token);
+
+    res.json({
+        code: 200,
+        message: 'Xác minh thành công !!',
+        token : token
+    })
 }
